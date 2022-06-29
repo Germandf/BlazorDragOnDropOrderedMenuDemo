@@ -1,4 +1,94 @@
 ﻿@page "/"
+@using MudBlazor.Utilities
 
 <PageTitle>Index</PageTitle>
 
+<div class="d-flex flex-column mud-width-full mud-height-full">
+	<MudToolBar Class="gap-4">
+		<MudButton OnClick="LoadServerData" Variant="Variant.Filled" Color="Color.Default">Load Data</MudButton>
+		<MudButton OnClick="SaveData" Variant="Variant.Filled" Color="Color.Primary">Save Data</MudButton>
+		<MudSpacer />
+		<MudButton OnClick="Reset" Variant="Variant.Text" Color="Color.Error">Reset Example</MudButton>
+	</MudToolBar>
+
+	<MudDropContainer T="DropItem" Items="@_dropzoneItems" @ref="_container" ItemsSelector="@((item,dropzone) => item.Selector == dropzone)" 
+		ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-1">
+		<ChildContent>
+			@for (int i = 1; i < 3; i++)
+			{
+				var dropzone = i.ToString();
+				<MudPaper Class="ma-4 flex-grow-1">
+					<MudList Clickable="true" Class="d-flex flex-column mud-height-full">
+						<MudListSubheader>Drop Zone @dropzone</MudListSubheader>
+						<MudDropZone T="DropItem" Identifier="@dropzone" Class="flex-grow-1" AllowReorder="true" />
+					</MudList>
+				</MudPaper>
+			}
+		</ChildContent>
+		<ItemRenderer>
+			<MudListItem Text="@($"{context.Name} ({context.Order})")" />
+		</ItemRenderer>
+	</MudDropContainer>
+</div>
+
+@code {
+
+	private MudDropContainer<DropItem> _container;
+	private List<DropItem> _dropzoneItems = new();
+	private List<DropItem> _serverData = new();
+
+	protected override void OnInitialized() => _serverData = GetNewList();
+
+	private void ItemUpdated(MudItemDropInfo<DropItem> dropItem)
+	{
+		dropItem.Item.Selector = dropItem.DropzoneIdentifier;
+		var indexOffset = dropItem.DropzoneIdentifier switch
+		{
+			"2"  => _dropzoneItems.Count(x => x.Selector == "1"),
+			_ => 0,
+		};
+		_dropzoneItems.UpdateOrder(dropItem, item => item.Order, indexOffset);
+	}
+
+	private void RefreshContainer()
+	{
+		StateHasChanged(); //update the binding to the container
+		_container.Refresh(); //the container refreshes the internal state
+	}
+
+	private void LoadServerData()
+	{
+		_dropzoneItems = new();
+		foreach(var item in _serverData.OrderBy(x => x.Order))
+			_dropzoneItems.Add(new DropItem { Name = item.Name, Order = item.Order, Selector = item.Selector });
+		RefreshContainer();
+	}
+
+	private void SaveData()
+	{
+		_serverData = new();
+		foreach(var item in _dropzoneItems)
+			_serverData.Add(new DropItem { Name = item.Name, Order = item.Order, Selector = item.Selector });
+	}
+
+	private void Reset()
+	{
+		_dropzoneItems = new();
+		_serverData = GetNewList();
+		RefreshContainer();
+	}
+
+	private List<DropItem> GetNewList() => new()
+	{
+		new DropItem() { Order = 0, Name = "Item 1", Selector = "1" },
+		new DropItem() { Order = 1, Name = "Item 2", Selector = "1" },
+		new DropItem() { Order = 2, Name = "Item 3", Selector = "1" },
+		new DropItem() { Order = 3, Name = "Item 4", Selector = "1" },
+		new DropItem() { Order = 4, Name = "Item 5", Selector = "1" },
+		new DropItem() { Order = 5, Name = "Item 6", Selector = "1" },
+		new DropItem() { Order = 6, Name = "Item 7", Selector = "2" },
+		new DropItem() { Order = 7, Name = "Item 8", Selector = "2" },
+		new DropItem() { Order = 8, Name = "Item 9", Selector = "2" },
+		new DropItem() { Order = 9, Name = "Item 10", Selector = "2" },
+	};
+}
